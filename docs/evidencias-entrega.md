@@ -10,7 +10,7 @@ Este documento é o checklist da apresentação. Cada print deve mostrar a barra
 | API REST .NET 8 | Pronto | `src/ProductApi`, Swagger e endpoint `/health` |
 | CRUD e modelo relacional | Pronto | Swagger: GET/POST/PUT/DELETE `/api/products` |
 | Azure SQL | Preparado, não provisionado | API usa `ConnectionStrings:SqlServer` quando configurada |
-| VM, Blob Static Website, Monitor | Não provisionados | Executar as etapas deste roteiro no Portal |
+| App Service, Blob Static Website, Monitor | Não provisionados | Executar `docs/implantacao-app-service.md` no Portal |
 | Application Insights | Código pronto; falta recurso/configuração | Connection string configurada como segredo |
 | Key Vault + Managed Identity | Código pronto; falta recurso/configuração | `KeyVaultUri` e segredo `ConnectionStrings--SqlServer` |
 | Azure Policy / Defender / Landing Zone | Falta configurar e registrar | Etapas 7 e 8 |
@@ -19,17 +19,17 @@ Este documento é o checklist da apresentação. Cada print deve mostrar a barra
 ## 1. Base do MVP — faça primeiro
 
 1. No Portal, crie o Resource Group `rg-producthub-dev`; aplique as tags `Projeto=ProductHub`, `Ambiente=Dev` e `Aluno=<seu nome>`.
-2. Crie Azure SQL Database, uma VM Linux e uma Storage Account com Static Website, todos no mesmo Resource Group e região.
-3. Publique a API na VM e o frontend no container `$web`, conforme `docs/implantacao.md`.
+2. Crie Azure SQL Database, App Service Linux e uma Storage Account com Static Website. A VM foi substituída por App Service com autorização do professor após restrição da assinatura estudantil.
+3. Publique a API no App Service e o frontend no container `$web`, conforme `docs/implantacao-app-service.md`.
 4. Em `frontend/config.js`, troque a URL local pelo endereço público HTTPS da API antes de fazer upload.
 
 **Prints obrigatórios:**
 
-- E01: Overview do Resource Group mostrando Storage Account, VM, SQL Database, Key Vault, Application Insights e Log Analytics (este print é feito no final).
+- E01: Overview do Resource Group mostrando Storage Account, App Service, SQL Database, Key Vault, Application Insights e Log Analytics (este print é feito no final).
 - E02: Swagger no navegador, com `GET /api/products` expandido e uma resposta `200`.
 - E03: Endpoint público do Static Website com pelo menos um produto salvo.
 - E04: Overview do Azure SQL Database, sem expor a connection string.
-- E05: Overview da VM, mostrando status `Running`, imagem Ubuntu e IP ocultado parcialmente se desejar.
+- E05: Overview do App Service, mostrando status `Running` e URL HTTPS.
 
 ## 2. Azure SQL: edições e decisão
 
@@ -68,7 +68,7 @@ Para uma migração de catálogo SQL pequeno, escolha **Replatform**: mover para
 ## 5. Telemetria: Monitor, Log Analytics e Application Insights
 
 1. Crie `law-producthub` (Log Analytics Workspace).
-2. Na VM, abra **Insights** → **Enable** e selecione esse workspace. Isso instala Azure Monitor Agent e cria/associa uma Data Collection Rule.
+2. Crie Application Insights conectado a esse workspace e configure a connection string no Key Vault. O App Service envia telemetria de requisições, dependências e exceções ao Application Insights.
 3. Crie Application Insights `appi-producthub`, conectado ao mesmo workspace.
 4. Copie somente a connection string para o Key Vault, no segredo `ApplicationInsights--ConnectionString`.
 5. Com Key Vault configurado, a API enviará Request, Dependency, Exception e traces automaticamente.
@@ -82,27 +82,27 @@ requests
 | order by timestamp desc
 ```
 
-No Log Analytics, valide a VM:
+No Log Analytics, valide a telemetria recebida:
 
 ```kusto
-Heartbeat
+AppRequests
 | where TimeGenerated > ago(30m)
-| project Computer, TimeGenerated, OSType
+| project TimeGenerated, Name, ResultCode, DurationMs, Success
 | order by TimeGenerated desc
 ```
 
-**Prints:** E10: VM Insights habilitado; E11: resultado da query `Heartbeat`; E12: resultado da query `requests`; E13: regra de alerta de CPU ou indisponibilidade criada.
+**Prints:** E10: Application Insights criado; E11: resultado de telemetria no Log Analytics; E12: resultado da query `requests`; E13: regra de alerta de falha/indisponibilidade criada.
 
 ## 6. Key Vault, identidade gerenciada e LGPD
 
 1. Crie `kv-producthub-<sufixo-unico>` com **Azure role-based access control** habilitado.
 2. Crie os segredos `ConnectionStrings--SqlServer` e `ApplicationInsights--ConnectionString`. O valor é secreto e não deve aparecer em print.
-3. Na VM → **Identity** → **System assigned**, marque `On` e salve.
-4. No Key Vault → **Access control (IAM)** → **Add role assignment**, conceda à identidade da VM a função **Key Vault Secrets User**.
-5. Na configuração da API, mantenha apenas `KeyVaultUri=https://NOME-DO-VAULT.vault.azure.net/`; não coloque senha no repositório nem no serviço systemd.
+3. No App Service → **Identity** → **System assigned**, marque `On` e salve.
+4. No Key Vault → **Access control (IAM)** → **Add role assignment**, conceda à identidade do App Service a função **Key Vault Secrets User**.
+5. Na configuração da API, mantenha apenas `KeyVaultUri=https://NOME-DO-VAULT.vault.azure.net/`; não coloque senha no repositório nem nas App Settings.
 6. Reinicie `productapi` e teste Swagger. Se a API abrir e gravar no Azure SQL, a identidade está recuperando o segredo.
 
-**Prints:** E14: Identity da VM como `On`; E15: role assignment da VM no Key Vault; E16: lista de segredos mostrando apenas os nomes, nunca valores; E17: Swagger funcionando depois da troca.
+**Prints:** E14: Identity do App Service como `On`; E15: role assignment do App Service no Key Vault; E16: lista de segredos mostrando apenas os nomes, nunca valores; E17: Swagger funcionando depois da troca.
 
 ## 7. Política e Landing Zone
 
@@ -116,12 +116,12 @@ Azure Blueprints está em aposentadoria faseada: desde 31/07/2026 novas definiç
 
 ## 8. Defender for Cloud
 
-Abra **Microsoft Defender for Cloud** → **Recommendations**. Revise as recomendações da VM, Storage e SQL. Corrija apenas o que cabe ao MVP, por exemplo: regras NSG restritas, identidade gerenciada ligada, HTTPS planejado e alertas habilitados. Se uma recomendação exigir SKU pago, registre-a como "não implementada por restrição de créditos", com justificativa e plano de evolução.
+Abra **Microsoft Defender for Cloud** → **Recommendations**. Revise as recomendações do App Service, Storage e SQL. Corrija apenas o que cabe ao MVP, por exemplo: identidade gerenciada ligada, HTTPS obrigatório e alertas habilitados. Se uma recomendação exigir SKU pago, registre-a como "não implementada por restrição de créditos", com justificativa e plano de evolução.
 
 **Prints:** E21: Recommendations filtradas para o Resource Group; E22: uma recomendação corrigida ou a justificativa documentada no relatório.
 
 ## 9. IaC, CI/CD e Well-Architected
 
-Estes artefatos serão adicionados ao repositório antes da entrega: Bicep para recursos e GitHub Actions para build/teste/deploy. O deploy produtivo da API permanece na VM, conforme requisito do MVP. Como a rubrica menciona App Service/Functions, o relatório terá um pipeline de evolução para uma Function/App Service, sem substituir a evidência da VM.
+O repositório contém Bicep para recursos e GitHub Actions para build/teste/deploy. O deploy produtivo da API usa App Service, uma substituição da VM autorizada pelo professor. O pipeline atende diretamente ao cenário de App Service citado na rubrica.
 
 **Prints futuros:** E23: arquivo Bicep no GitHub e execução/validação; E24: execução verde do GitHub Actions; E25: diagrama Well-Architected e tabela de trade-offs/priorização.

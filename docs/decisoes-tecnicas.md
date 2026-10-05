@@ -18,16 +18,16 @@ Para uma base SQL existente pequena, a estratégia provável é **Rehost** inici
 
 ## Segurança, LGPD e governança
 
-Dados pessoais não são necessários para o MVP. Caso usuários sejam incluídos, colete o mínimo necessário, documente finalidade e retenção, proteja dados em trânsito (HTTPS) e em repouso, e evite dados pessoais nos logs. Segredos ficam no Key Vault; a VM usa Managed Identity em vez de senha no código. Aplicar RBAC de menor privilégio, tags de custo, Azure Policy para exigir tags e impedir recursos públicos indevidos. Defender for Cloud deve ser revisado periodicamente e recomendações críticas devem ser tratadas ou justificadas.
+Dados pessoais não são necessários para o MVP. Caso usuários sejam incluídos, colete o mínimo necessário, documente finalidade e retenção, proteja dados em trânsito (HTTPS) e em repouso, e evite dados pessoais nos logs. Segredos ficam no Key Vault; o App Service usa Managed Identity em vez de senha no código. Aplicar RBAC de menor privilégio, tags de custo, Azure Policy para exigir tags e impedir recursos públicos indevidos. Defender for Cloud deve ser revisado periodicamente e recomendações críticas devem ser tratadas ou justificadas.
 
 ## Well-Architected e evolução
 
 | Pilar | Decisão atual | Próxima evolução |
 |---|---|---|
-| Confiabilidade | VM única, adequada apenas para MVP | Backup, zona de disponibilidade e múltiplas instâncias |
+| Confiabilidade | App Service gerenciado, adequado ao MVP | Slot de implantação, backup e escala horizontal |
 | Segurança | Key Vault, identidade gerenciada, NSG restritivo | WAF, autenticação e análise contínua do Defender |
-| Otimização de custos | SKUs mínimos e VM desligada quando ociosa | Orçamento, alertas e migração para serviço gerenciado |
+| Otimização de custos | Plano App Service mínimo e orçamento | Otimizar plano, escala e monitorar consumo |
 | Excelência operacional | Logs centralizados e documentação | CI/CD, runbooks e alertas acionáveis |
 | Eficiência de desempenho | API REST e SQL indexado por chave | Cache e escala conforme métricas |
 
-Prioridades: (1) implantar o MVP com segurança; (2) telemetria e orçamento; (3) pipeline CI/CD e IaC; (4) autenticação; (5) substituir VM por App Service/Container Apps se houver crescimento. O pipeline solicitado para App Service/Functions será documentado como rota de evolução, pois este MVP atende ao requisito explícito de hospedagem em VM.
+Prioridades: (1) implantar o MVP no App Service com segurança; (2) telemetria e orçamento; (3) pipeline CI/CD e IaC; (4) autenticação; (5) avaliar Azure Container Apps se houver necessidade de imagem Docker, escala para zero ou múltiplos microsserviços.

@@ -1,4 +1,6 @@
-# Guia de implantação econômica
+# Guia de implantação econômica — histórico da opção VM
+
+> **Não use este roteiro para a implantação atual.** A exigência de VM foi substituída, com autorização do professor, por Azure App Service devido à indisponibilidade de SKUs de VM na assinatura Azure for Students. Use [implantacao-app-service.md](implantacao-app-service.md).
 
 > Atenção: crie recursos somente na região e SKU disponíveis em sua assinatura. Antes de confirmar cada tela do Portal Azure, confira a estimativa mostrada e acompanhe **Cost Management + Billing**.
 
