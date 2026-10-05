@@ -9,7 +9,7 @@ async function request(path, options = {}) {
 }
 async function load() {
   status.textContent = "Carregando produtos…"; list.innerHTML = "";
-  try { const products = await request("/api/products/"); document.querySelector("#total").textContent = products.length; status.textContent = products.length ? "" : "Ainda não há produtos cadastrados."; products.forEach(render); }
+  try { const products = await request("/api/products/"); const total = document.querySelector("#total"); if (total) total.textContent = products.length; status.textContent = products.length ? "" : "Ainda não há produtos cadastrados."; products.forEach(render); }
   catch { status.textContent = "Não foi possível conectar à API. Confira frontend/config.js e inicie a API."; }
 }
 function render(product) {
