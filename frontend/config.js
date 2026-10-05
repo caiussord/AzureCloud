@@ -1,2 +1,4 @@
-// Em produção, substitua pelo endereço HTTPS público da API na VM.
-window.APP_CONFIG = { apiBaseUrl: "http://localhost:5183" };
+// API hospedada no Azure App Service.
+window.APP_CONFIG = {
+  apiBaseUrl: "https://app-producthub-caius-dqgucrfde5dcgfc5.canadacentral-01.azurewebsites.net"
+};
